@@ -129,6 +129,17 @@ Before releasing, ensure:
   - Commits and pushes changes
   - Triggers release workflow
 
+### Required Repository Settings
+
+For the workflows to work, ensure these settings are enabled:
+
+1. **Go to**: Repository Settings → Actions → General
+2. **Workflow permissions**: Select "Read and write permissions"
+3. **Check**: "Allow GitHub Actions to create and approve pull requests"
+4. **Save** changes
+
+If you get a 403 error, check these permissions!
+
 ## File Structure
 
 ```
