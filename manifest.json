@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Pushbullet",
-  "version": "366",
-  "author": "Pushbullet",
+  "name": "Pushbullet Enhanced",
+  "version": "367.0.0",
+  "author": "Pushbullet (Enhanced Fork)",
   "default_locale": "en",
   "description": "Bringing together your devices, friends, and the things you care about.",
   "icons": {
@@ -71,6 +71,13 @@
     ]
   },
   "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+P",
+        "mac": "Command+Shift+P"
+      },
+      "description": "Toggle Pushbullet popup"
+    },
     "dismiss-most-recent-notification": {
       "suggested_key": {
         "default": "Ctrl+Shift+K",
@@ -93,6 +100,13 @@
       "description": "Pop out the push panel"
     }
   },
+  "content_scripts": [
+    {
+      "matches": ["https://*.pushbullet.com/*", "http://*.pushbullet.com/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_end"
+    }
+  ],
   "web_accessible_resources": [
     {
       "resources": ["*.png"],

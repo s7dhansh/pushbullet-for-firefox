@@ -8,9 +8,62 @@ pb.addEventListener('signed_in', function(e) {
     })
 })
 
+// Listen for system theme changes
+if (window.matchMedia) {
+    var darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    
+    var handleThemeChange = function(e) {
+        // Only auto-update if user hasn't explicitly set a preference
+        if (localStorage['darkMode'] === undefined || localStorage['darkMode'] === 'undefined') {
+            pb.settings.darkMode = e.matches
+            pb.saveSettings()
+            
+            // Notify all pages to update their theme
+            chrome.runtime.sendMessage({
+                type: 'themeChanged',
+                darkMode: e.matches
+            }).catch(function() {
+                // Ignore errors if no pages are listening
+            })
+        }
+    }
+    
+    // Modern browsers
+    if (darkModeMediaQuery.addEventListener) {
+        darkModeMediaQuery.addEventListener('change', handleThemeChange)
+    } else if (darkModeMediaQuery.addListener) {
+        // Older browsers
+        darkModeMediaQuery.addListener(handleThemeChange)
+    }
+}
+
+pb.getSystemDarkMode = function() {
+    if (window.matchMedia) {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+    return false
+}
+
 pb.loadSettings = function() {
+    // Use system theme if darkMode hasn't been explicitly set
+    var darkMode
+    
+    // One-time migration: if darkMode was set to false by default, reset to system preference
+    if (!localStorage['darkModeUserSet'] && localStorage['darkMode'] === 'false') {
+        delete localStorage['darkMode']
+    }
+    
+    // Check if this is the first time or if user wants to reset to system theme
+    if (!localStorage['darkMode'] || localStorage['darkMode'] === 'undefined' || localStorage['darkMode'] === 'null') {
+        darkMode = pb.getSystemDarkMode()
+        // Save it so we know it's been set
+        localStorage['darkMode'] = darkMode
+    } else {
+        darkMode = localStorage['darkMode'] === 'true'
+    }
+    
     pb.settings = {
-        'darkMode': localStorage['darkMode'] === 'true',
+        'darkMode': darkMode,
         'openMyLinksAutomatically': localStorage['openMyLinksAutomatically'] !== 'false',
         'onlyShowTitles': localStorage['onlyShowTitles'] === 'true',
         'useDarkIcon': localStorage['useDarkIcon'] === 'true',

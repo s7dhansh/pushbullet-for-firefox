@@ -18,19 +18,55 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         return true
     } else if (message.type === 'checkCookie') {
         // Manually check for cookie (useful after sign-in)
+        console.log('checkCookie message received')
+        
+        // Debug: Check if we can access ANY cookies at all
+        chrome.cookies.getAll({}, function(allCookies) {
+            console.log('Total cookies accessible:', allCookies.length)
+            var pbCookies = allCookies.filter(function(c) {
+                return c.domain.indexOf('pushbullet') !== -1
+            })
+            console.log('Pushbullet-related cookies:', pbCookies)
+        })
+        
+        // Debug: List all pushbullet cookies with different domain variations
+        chrome.cookies.getAll({ domain: 'pushbullet.com' }, function(cookies) {
+            console.log('All pushbullet.com cookies:', cookies)
+        })
+        chrome.cookies.getAll({ domain: '.pushbullet.com' }, function(cookies) {
+            console.log('All .pushbullet.com cookies:', cookies)
+        })
+        chrome.cookies.getAll({ domain: 'www.pushbullet.com' }, function(cookies) {
+            console.log('All www.pushbullet.com cookies:', cookies)
+        })
+        
+        // Try to get the cookie with different URL variations
+        chrome.cookies.get({ url: 'http://www.pushbullet.com', name: 'api_key' }, function(cookie) {
+            console.log('HTTP www cookie:', cookie)
+        })
+        chrome.cookies.get({ url: 'https://pushbullet.com', name: 'api_key' }, function(cookie) {
+            console.log('HTTPS no-www cookie:', cookie)
+        })
+        
         chrome.cookies.get({ 'url': 'https://www.pushbullet.com', 'name': 'api_key' }, function(cookie) {
+            console.log('Cookie check result:', cookie)
             if (cookie && cookie.value && cookie.value !== 'undefined' && cookie.value !== 'null') {
                 console.log('Manual cookie check found api_key:', cookie.value)
+                
+                // Only reload if this is a new API key
+                var isNewKey = localStorage.apiKey !== cookie.value
                 localStorage.apiKey = cookie.value
                 
                 delete localStorage.hasShownSignInNotification
                 
-                if (typeof main === 'function') {
+                if (isNewKey && typeof main === 'function') {
+                    console.log('New API key detected, calling main()')
                     main()
                 }
                 
                 sendResponse({ success: true, apiKey: cookie.value })
             } else {
+                console.log('No api_key cookie found')
                 sendResponse({ success: false })
             }
         })
@@ -62,6 +98,28 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     } else if (message.type === 'openTab') {
         if (pb.openTab) {
             pb.openTab(message.url)
+        }
+    } else if (message.type === 'apiKeyFound') {
+        console.log('apiKeyFound message received from content script:', message.apiKey)
+        
+        // Only save if it's a new API key
+        if (localStorage.apiKey !== message.apiKey) {
+            console.log('New API key detected from content script, saving...')
+            localStorage.apiKey = message.apiKey
+            delete localStorage.hasShownSignInNotification
+            
+            if (typeof main === 'function') {
+                console.log('Calling main() to reload with new API key')
+                main()
+            }
+            
+            notifyPbUpdate()
+        }
+    } else if (message.type === 'reloadAfterSignIn') {
+        console.log('reloadAfterSignIn message received')
+        if (typeof main === 'function') {
+            console.log('Calling main() to reload after sign-in')
+            main()
         }
     } else if (message.type === 'signOut') {
         if (pb.signOut) {
@@ -182,28 +240,10 @@ if (chrome.cookies && chrome.cookies.onChanged) {
     console.error('chrome.cookies.onChanged not available')
 }
 
-// Periodically check for cookie if not signed in (fallback mechanism)
-setInterval(function() {
-    if (!localStorage.apiKey || !pb.local || !pb.local.user) {
-        chrome.cookies.get({ 'url': 'https://www.pushbullet.com', 'name': 'api_key' }, function(cookie) {
-            if (cookie && cookie.value && cookie.value !== 'undefined' && cookie.value !== 'null') {
-                if (localStorage.apiKey !== cookie.value) {
-                    console.log('Periodic check found api_key cookie:', cookie.value)
-                    localStorage.apiKey = cookie.value
-                    
-                    delete localStorage.hasShownSignInNotification
-                    
-                    if (typeof main === 'function') {
-                        console.log('Calling main() after periodic check')
-                        main()
-                    }
-                    
-                    notifyPbUpdate()
-                }
-            }
-        })
-    }
-}, 3000) // Check every 3 seconds
+// Note: Periodic cookie checking removed because Firefox blocks all cookie access
+// The extension now relies on:
+// 1. Content script (content-script.js) that runs on pushbullet.com pages
+// 2. Manual API key entry via the sign-in prompt
 
 // Debug: Log current state on load
 console.log('Background wrapper loaded')

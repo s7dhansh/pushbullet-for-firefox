@@ -174,48 +174,7 @@ var smsLocalsChangedListener = function() {
     while (banner.hasChildNodes()) {
         banner.removeChild(banner.lastChild)
     }
-
-    if (!pb.local.user.pro && pb.local.user.reply_count_quota) {
-        banner.style.display = 'block'
-
-        var span = document.createElement('span')
-
-        var link = document.createElement('span')
-        link.textContent = chrome.i18n.getMessage('reply_limit_upgrade')
-        link.style.textDecoration = 'underline'
-        link.style.cursor = 'pointer'
-
-        if (pb.local.user.reply_count_quota == 'over_limit') {
-            banner.style.backgroundColor = '#e85845'
-            banner.style.color = 'white'
-            span.textContent = chrome.i18n.getMessage('reply_limit_reached') + ' '
-
-            link.onclick = function() {
-                pb.openTab(pb.www + '/pro')
-                pb.track({
-                    'name': 'go_upgrade',
-                    'source': 'sms_limit'
-                })
-            }
-        } else {
-            banner.style.backgroundColor = '#ecf0f0'
-            banner.style.color = 'inherit'
-            span.textContent = chrome.i18n.getMessage('reply_limit_warning') + ' '
-
-            link.onclick = function() {
-                pb.openTab(pb.www + '/pro')
-                pb.track({
-                    'name': 'go_upgrade',
-                    'source': 'sms_warning'
-                })
-            }
-        }
-
-        banner.appendChild(span)
-        banner.appendChild(link)
-    } else {
-        banner.style.display = 'none'
-    }
+    banner.style.display = 'none'
 }
 
 var setUpInput = function() {
@@ -388,13 +347,17 @@ var selectThread = function(thread) {
     }
 
     pb.getThread(smsDeviceInput.target.iden, thread.id, function(response) {
+        console.log('getThread response:', response)
         if (thread == smsInput.thread) {
             if (response) {
                 var messages = response.thread
+                console.log('SMS messages:', messages)
                 smsInput.messages = messages
                 smsInput.focus()
 
                 smsLocalsChangedListener()
+            } else {
+                console.error('No response from getThread')
             }
         }
     })

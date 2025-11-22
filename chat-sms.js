@@ -42,26 +42,26 @@ var drawSmsChat = function(device, thread, messages) {
         }
     })
 
-    var pending = utils.asArray(pb.successfulSms).concat(pb.smsQueue).filter(function(pending) {
-        if (pending.target_device_iden != device.iden) {
+    var pending = utils.asArray(pb.successfulSms || {}).concat(utils.asArray(pb.smsQueue || [])).filter(function(pendingItem) {
+        if (!pendingItem || pendingItem.target_device_iden != device.iden) {
             return false
         }
 
-        if (thread.recipients.length == pending.addresses.length && thread.recipients.filter(function(recipient) {
-            return pending.addresses.indexOf(recipient.address) != -1
+        if (thread.recipients.length == pendingItem.addresses.length && thread.recipients.filter(function(recipient) {
+            return pendingItem.addresses.indexOf(recipient.address) != -1
         }).length != thread.recipients.length) {
             return false
         }
 
         for (var i = 0; i < texts.length; i++) {
             var text = texts[i]
-            if (text.data.guid == pending.guid) {
+            if (text.data.guid == pendingItem.guid) {
                 return false
             }
         }
 
         return true
-    }).concat(pb.fileQueue.filter(function(data) {
+    }).concat((pb.fileQueue || []).filter(function(data) {
         return data.type == 'sms'
                && data.addresses.length == data.addresses.length
                && thread.recipients.length == data.addresses.length

@@ -1,0 +1,102 @@
+name: Build and Release XPI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Get current version from manifest
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' manifest.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+      
+      - name: Check if version tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.get_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.get_version.outputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.get_version.outputs.version }} does not exist"
+          fi
+      
+      - name: Create XPI package
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          # Create a clean build directory
+          mkdir -p build
+          
+          # Copy all necessary files (exclude git, github, and other dev files)
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='build' \
+                    --exclude='*.md' \
+                    --exclude='.DS_Store' \
+                    --exclude='node_modules' \
+                    . build/
+          
+          # Create XPI (which is just a ZIP file)
+          cd build
+          zip -r ../pushbullet-enhanced-v${{ steps.get_version.outputs.version }}.xpi .
+          cd ..
+          
+          # Verify the XPI was created
+          ls -lh pushbullet-enhanced-v${{ steps.get_version.outputs.version }}.xpi
+      
+      - name: Generate changelog
+        if: steps.check_tag.outputs.exists == 'false'
+        id: changelog
+        run: |
+          # Get the last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            echo "First release"
+            CHANGELOG="Initial release of Pushbullet Enhanced for Firefox"
+          else
+            echo "Generating changelog from $LAST_TAG to HEAD"
+            CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"- %s" --no-merges)
+          fi
+          
+          # Save changelog to file
+          echo "$CHANGELOG" > CHANGELOG.txt
+          cat CHANGELOG.txt
+      
+      - name: Create Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Pushbullet Enhanced v${{ steps.get_version.outputs.version }}
+          body_path: CHANGELOG.txt
+          files: |
+            pushbullet-enhanced-v${{ steps.get_version.outputs.version }}.xpi
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Skip release (version already exists)
+        if: steps.check_tag.outputs.exists == 'true'
+        run: |
+          echo "⚠️  Version v${{ steps.get_version.outputs.version }} already released"
+          echo "To create a new release, update the version in manifest.json"

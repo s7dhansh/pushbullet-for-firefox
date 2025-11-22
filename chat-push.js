@@ -98,7 +98,10 @@ var filterAndSortPushes = function(stream) {
         return a.created - b.created
     }).filter(pushesFilter)
 
-    var pendingPushes = utils.asArray(pb.successfulPushes).concat(pb.pushQueue).filter(function(pending) {
+    var pendingPushes = utils.asArray(pb.successfulPushes || {}).concat(utils.asArray(pb.pushQueue || [])).filter(function(pending) {
+        if (!pending) {
+            return false
+        }
         for (var i = 0; i < pushes.length; i++) {
             var push = pushes[i]
             if (pending.guid == push.guid) {
@@ -108,9 +111,9 @@ var filterAndSortPushes = function(stream) {
         return true
     })
 
-    pushes = pushes.concat(pendingPushes).concat(pb.fileQueue.filter(function(data) {
+    pushes = pushes.concat(pendingPushes).concat((pb.fileQueue || []).filter(function(data) {
         return data.type != 'sms'
-    })).concat(pb.failedPushes).filter(pushesFilter)
+    })).concat(pb.failedPushes || []).filter(pushesFilter)
 
     var modified = false
     pushes.forEach(function(push) {

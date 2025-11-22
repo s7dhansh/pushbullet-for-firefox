@@ -67,33 +67,76 @@ var setUp = function() {
     document.getElementById('logo-link').onclick = goToSite
 
     var signIn = function() {
-        pb.openTab('https://www.pushbullet.com/signin?source=' + pb.browser)
+        // Open the sign-in page
+        pb.openTab('https://www.pushbullet.com/signin?source=' + (pb.browser || 'firefox'))
+        
+        // Show instructions
+        setTimeout(function() {
+            var message = 'After signing in to Pushbullet:\n\n' +
+                         '1. Go to Settings (gear icon)\n' +
+                         '2. Click "Account"\n' +
+                         '3. Scroll to "Access Tokens"\n' +
+                         '4. Click "Create Access Token"\n' +
+                         '5. Copy the token\n\n' +
+                         'Then paste your Access Token here:'
+            
+            var apiKey = prompt(message)
+            if (apiKey && apiKey.trim()) {
+                apiKey = apiKey.trim()
+                console.log('API key entered, length:', apiKey.length)
+                localStorage.apiKey = apiKey
+                delete localStorage.hasShownSignInNotification
+                
+                // Trigger background reload
+                chrome.runtime.sendMessage({ type: 'reloadAfterSignIn' }).catch(function(e) {
+                    console.log('Message error (expected):', e)
+                })
+                
+                // Reload the panel
+                window.location.reload()
+            } else if (apiKey !== null) {
+                // User clicked OK but didn't enter anything
+                alert('No API key entered. Click the sign-in button again when you have your Access Token.')
+            }
+        }, 2000)
     }
 
-    document.getElementById('sign-in').onclick = signIn
-    document.getElementById('sign-up').onclick = signIn
+    var signInButton = document.getElementById('sign-in')
+    var signUpButton = document.getElementById('sign-up')
+    
+    if (signInButton) {
+        signInButton.onclick = signIn
+    }
+    
+    if (signUpButton) {
+        signUpButton.onclick = signIn
+    }
 
     document.getElementById('third-party-cookies').onclick = function() {
         pb.openTab('https://support.mozilla.org/en-US/kb/disable-third-party-cookies')
     }
 
     if (!pb.local.user) {
-        // Check if user has signed in via website
-        chrome.runtime.sendMessage({ type: 'checkCookie' }, function(response) {
-            if (response && response.success) {
-                console.log('Found cookie after sign-in, reloading panel...')
-                // Wait a moment for background to reload, then refresh panel
-                setTimeout(function() {
-                    window.location.reload()
-                }, 1000)
-            }
-        })
+        console.log('User not signed in')
+        // Note: Cookie-based auth doesn't work in Firefox due to privacy restrictions
+        // Users must manually enter their API key
         return
     }
 
-    if (pb.local.user.pro && pb.settings.darkMode) {
+    if (pb.settings.darkMode) {
         document.body.classList.add('darkmode')
     }
+    
+    // Listen for theme changes
+    chrome.runtime.onMessage.addListener(function(message) {
+        if (message.type === 'themeChanged') {
+            if (message.darkMode) {
+                document.body.classList.add('darkmode')
+            } else {
+                document.body.classList.remove('darkmode')
+            }
+        }
+    })
 
     document.getElementById('sign-out-link').onclick = function() {
         pb.signOut()

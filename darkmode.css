@@ -180,5 +180,6 @@ body.darkmode {
     color: #95a5a6;
 }
 .darkmode #account-ribbon {
+    display: none;
     background-image: url(ic_ribbon_darkmode.png);
 }

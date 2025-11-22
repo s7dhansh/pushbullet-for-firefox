@@ -16,12 +16,75 @@ try {
     }
 }
 
+// Helper function to detect OTP codes in text
+var detectOTP = function(text) {
+    if (!text) return null
+    
+    // Common OTP patterns:
+    // - 4-8 digit numbers
+    // - Often preceded by keywords like "code", "OTP", "verification", etc.
+    var patterns = [
+        /(?:code|otp|verification|verify|pin|password|passcode|token)[\s:]*(\d{4,8})/i,
+        /\b(\d{6})\b/,  // 6-digit codes (most common)
+        /\b(\d{4})\b/,  // 4-digit codes
+        /\b(\d{5})\b/,  // 5-digit codes
+        /\b(\d{7,8})\b/ // 7-8 digit codes
+    ]
+    
+    for (var i = 0; i < patterns.length; i++) {
+        var match = text.match(patterns[i])
+        if (match) {
+            return match[1] || match[0]
+        }
+    }
+    
+    return null
+}
+
 pb.notifier.show = function(options) {
     pb.log('Showing notification with key ' + options.key)
 
     options.allButtons = options.buttons
     options.fullMessage = options.message
     options.allItems = options.items
+    
+    // Detect OTP in message
+    var otpCode = detectOTP(options.message) || detectOTP(options.title)
+    if (otpCode) {
+        console.log('OTP detected:', otpCode)
+        options.otpCode = otpCode
+        // Prepend OTP to title for visibility
+        options.title = '🔐 OTP: ' + otpCode + ' - ' + (options.title || 'Verification Code')
+        
+        // Store the original onclick handler
+        var originalOnclick = options.onclick
+        
+        // Override onclick to copy OTP when notification is clicked
+        options.onclick = function() {
+            // Copy OTP using execCommand as fallback for background context
+            var textArea = document.createElement('textarea')
+            textArea.value = otpCode
+            textArea.style.position = 'fixed'
+            textArea.style.left = '-999999px'
+            document.body.appendChild(textArea)
+            textArea.select()
+            
+            try {
+                document.execCommand('copy')
+                pb.log('OTP copied to clipboard: ' + otpCode)
+                console.log('OTP copied:', otpCode)
+            } catch (err) {
+                console.error('Failed to copy OTP:', err)
+            }
+            
+            document.body.removeChild(textArea)
+            
+            // Call original onclick if it exists
+            if (originalOnclick) {
+                originalOnclick()
+            }
+        }
+    }
 
     if (pb.settings.onlyShowTitles) {
         if (options.type == 'list') {

@@ -115,16 +115,7 @@ var showMirror = function(mirror) {
                 'short_title': action.label,
                 'iconUrl': 'action_android.png',
                 'onclick': function() {
-                    if (pb.local.user.pro) {
-                        dismissRemote(mirror, action.trigger_key)
-                    } else {
-                        pb.openTab('https://help.pushbullet.com/articles/notification-actions-require-pushbullet-pro/')
-                        showMirror(mirror)
-                        pb.track({
-                            'name': 'go_upgrade',
-                            'source': 'notification_action'
-                        })
-                    }
+                    dismissRemote(mirror, action.trigger_key)
                 }
             })
         })

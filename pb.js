@@ -151,7 +151,7 @@ pb.popOutPanel = function() {
         'name': 'panel_popped_out'
     })
 
-    var popoutUrl = chrome.extension.getURL('panel.html')
+    var popoutUrl = chrome.runtime.getURL('panel.html')
 
     var openPopout = function() {
         chrome.windows.create({

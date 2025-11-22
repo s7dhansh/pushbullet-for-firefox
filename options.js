@@ -60,12 +60,24 @@ window.init = function() {
 
         if (pb.local.user.pro) {
             document.getElementById('ribbon').style.display = 'block'
-
-            if (pb.settings.darkMode) {
-                document.body.classList.add('darkmode')
-            }
         }
     }
+    
+    // Apply dark mode regardless of sign-in status
+    if (pb.settings.darkMode) {
+        document.body.classList.add('darkmode')
+    }
+    
+    // Listen for theme changes
+    chrome.runtime.onMessage.addListener(function(message) {
+        if (message.type === 'themeChanged') {
+            if (message.darkMode) {
+                document.body.classList.add('darkmode')
+            } else {
+                document.body.classList.remove('darkmode')
+            }
+        }
+    })
 
     setUpOptions()
 
@@ -117,11 +129,16 @@ var setUpDarkModeOption = function() {
     var checkbox = document.getElementById('darkmode-checkbox')
     checkbox.checked = pb.settings['darkMode']
     checkbox.onclick = function() {
-        if (checkbox.checked && !pb.local.user.pro) {
-            checkbox.checked = false
-            showProPrompt()
+        // Mark that user has manually set dark mode preference
+        localStorage['darkModeUserSet'] = 'true'
+        
+        optionChanged('darkMode', checkbox.checked)
+        
+        // Update the UI immediately (no Pro restriction)
+        if (checkbox.checked) {
+            document.body.classList.add('darkmode')
         } else {
-            optionChanged('darkMode', checkbox.checked)
+            document.body.classList.remove('darkmode')
         }
     }
 }
@@ -299,7 +316,7 @@ var setUpEndToEndOption = function() {
         }
     }
 
-    checkbox.checked = pb.e2e.enabled
+    checkbox.checked = pb.e2e && pb.e2e.enabled
     if (checkbox.checked) {
         configuration.style.display = 'block'
     } else {
@@ -310,10 +327,12 @@ var setUpEndToEndOption = function() {
     var save = document.getElementById('e2e-save')
     var clear = document.getElementById('e2e-clear')
 
-    input.value = pb.e2e.enabled ? btoa(pb.e2e.key) : ''
+    input.value = (pb.e2e && pb.e2e.enabled) ? btoa(pb.e2e.key) : ''
 
     save.onclick = function() {
-        pb.e2e.setPassword(input.value)
+        if (pb.e2e && pb.e2e.setPassword) {
+            pb.e2e.setPassword(input.value)
+        }
     }
 
     clear.onclick = function() {
@@ -343,28 +362,7 @@ var optionChanged = function(key, value) {
     pb.saveSettings()
     pb.loadSettings()
 
-    if (pb.local.user.pro && pb.settings.darkMode) {
-        document.body.classList.add('darkmode')
-    } else {
-        document.body.classList.remove('darkmode')
-    }
-}
-
-var showProPrompt = function() {
-    document.getElementById('overlay').style.display = 'block'
-    document.getElementById('overlay').onclick = function() {
-        hideProPrompt()
-    }
-    document.getElementById('pro-dialog').onclick = function(e) {
-        e.cancelBubble = true
-    }
-    document.getElementById('pro-dialog-cancel').onclick = function() {
-        hideProPrompt()
-    }
-    document.getElementById('pro-dialog-more').onclick = function () {
-        pb.openTab(pb.www + '/pro')
-        hideProPrompt()
-    }
+    document.body.classList.add('darkmode')
 }
 
 var hideProPrompt = function() {
