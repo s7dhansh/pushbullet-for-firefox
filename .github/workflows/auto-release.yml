@@ -9,6 +9,12 @@ on:
       - 'CHANGELOG.md'
       - 'CONTRIBUTING.md'
       - '.github/**'
+  workflow_dispatch:
+    inputs:
+      force_version:
+        description: 'Force specific version (leave empty for auto-bump)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -50,7 +56,7 @@ jobs:
       
       - name: Auto-bump patch version
         id: new_version
-        if: steps.check_tag.outputs.exists == 'true'
+        if: steps.check_tag.outputs.exists == 'true' && github.event.inputs.force_version == ''
         run: |
           CURRENT="${{ steps.current_version.outputs.current }}"
           IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT"
@@ -76,10 +82,31 @@ jobs:
           git commit -m "chore: auto-bump version to $NEW_VERSION [skip ci]"
           git push
       
+      - name: Use forced version
+        id: forced_version
+        if: github.event.inputs.force_version != ''
+        run: |
+          FORCED="${{ github.event.inputs.force_version }}"
+          echo "new=$FORCED" >> $GITHUB_OUTPUT
+          echo "Using forced version: $FORCED"
+          
+          # Update manifest.json
+          jq --arg version "$FORCED" '.version = $version' manifest.json > manifest.json.tmp
+          mv manifest.json.tmp manifest.json
+          
+          # Commit the version change
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add manifest.json
+          git commit -m "chore: set version to $FORCED [skip ci]"
+          git push
+      
       - name: Set version for release
         id: release_version
         run: |
-          if [ "${{ steps.check_tag.outputs.exists }}" == "true" ]; then
+          if [ "${{ github.event.inputs.force_version }}" != "" ]; then
+            echo "version=${{ steps.forced_version.outputs.new }}" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.check_tag.outputs.exists }}" == "true" ]; then
             echo "version=${{ steps.new_version.outputs.new }}" >> $GITHUB_OUTPUT
           else
             echo "version=${{ steps.current_version.outputs.current }}" >> $GITHUB_OUTPUT

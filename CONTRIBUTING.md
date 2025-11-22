@@ -52,6 +52,24 @@ docs: improve installation instructions
 
 **Example**: If current version is `367.0.0` and tag exists, it auto-bumps to `367.0.1`
 
+**Note**: Changes to README.md, CHANGELOG.md, CONTRIBUTING.md, or `.github/` folder don't trigger releases (to avoid noise).
+
+### Manual Release Trigger
+
+To manually trigger a release (useful after documentation changes):
+
+1. **Go to**: GitHub → Actions → "Auto Version and Release"
+2. **Click**: "Run workflow"
+3. **Options**:
+   - Leave "Force specific version" empty for auto-bump
+   - Or enter a specific version like `367.1.0`
+4. **Click**: "Run workflow"
+
+This is useful when:
+- You only changed documentation and want to create a release anyway
+- You want to set a specific version number
+- The automatic workflow didn't trigger
+
 ### Manual Version Bump (For Major/Minor Changes)
 
 For major or minor version changes, use the manual workflow:
