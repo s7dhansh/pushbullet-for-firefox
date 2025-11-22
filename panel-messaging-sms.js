@@ -353,7 +353,8 @@ var selectThread = function(thread) {
                 var messages = response.thread
                 console.log('SMS messages:', messages)
                 smsInput.messages = messages
-                smsInput.focus()
+                // Removed auto-focus - user must click input to focus
+                // smsInput.focus()
 
                 smsLocalsChangedListener()
             } else {
@@ -383,7 +384,8 @@ var selectCompose = function(row) {
 
     var composeInput = document.getElementById('compose-message')
     composeInput.placeholder = chrome.i18n.getMessage('message_placeholder')
-    composeInput.focus()
+    // Removed auto-focus - user must click input to focus
+    // composeInput.focus()
 
     composeInput.onkeydown = function(e) {
         if (e.keyCode == utils.ENTER && !e.shiftKey) {
@@ -448,9 +450,10 @@ var selectCompose = function(row) {
                 'targets': phonebook,
                 'noDefault': true,
                 'onselect': function(target) {
-                    setTimeout(function() {
-                        composeInput.focus()
-                    }, 100)
+                    // Removed auto focus
+                    // setTimeout(function() {
+                    //     composeInput.focus()
+                    // }, 100)
                 }
             })
         }
