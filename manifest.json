@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pushbullet Enhanced",
-  "version": "367.0.0",
+  "version": "367.0.1",
   "author": "Pushbullet (Enhanced Fork)",
   "default_locale": "en",
   "description": "Bringing together your devices, friends, and the things you care about.",
@@ -102,15 +102,24 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.pushbullet.com/*", "http://*.pushbullet.com/*"],
-      "js": ["content-script.js"],
+      "matches": [
+        "https://*.pushbullet.com/*",
+        "http://*.pushbullet.com/*"
+      ],
+      "js": [
+        "content-script.js"
+      ],
       "run_at": "document_end"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["*.png"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "*.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "browser_specific_settings": {
