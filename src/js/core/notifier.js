@@ -54,7 +54,7 @@ pb.notifier.show = function(options) {
         console.log('OTP detected:', otpCode)
         options.otpCode = otpCode
         // Prepend OTP to title for visibility
-        options.title = '🔐 OTP: ' + otpCode + ' - ' + (options.title || 'Verification Code')
+        options.title = '🔐 ' + otpCode + ' - ' + (options.title || 'Verification Code')
         
         // Store the original onclick handler
         var originalOnclick = options.onclick
