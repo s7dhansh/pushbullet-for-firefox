@@ -248,7 +248,6 @@ var setUpThreads = function(threads) {
     var composeRow = newSmsRow()
     fragment.appendChild(composeRow)
 
-    var selectedThread
     if (threads) {
         threads.forEach(function(thread) {
             var name, imageUrl
@@ -279,19 +278,14 @@ var setUpThreads = function(threads) {
                 selectThread(thread)
             }
 
-            if (thread.id == localStorage['lastTheadId_' + smsDeviceInput.target.iden]) {
-                selectedThread = thread
-            }
-
             fragment.appendChild(row)
         })
     }
 
     threadsHolder.appendChild(fragment)
 
-    if (selectedThread) {
-        selectThread(selectedThread)
-    } else if (threads && threads.length > 0 && document.getElementById('sms-compose-right').style.display != 'block') {
+    // Always select the latest thread (first in list) when SMS tab is opened
+    if (threads && threads.length > 0) {
         selectThread(threads[0])
     } else {
         selectCompose(composeRow)
@@ -325,8 +319,6 @@ var selectThread = function(thread) {
         scrollStreamRowIntoViewIfNecessary(row)
     }
 
-    
-    localStorage['lastTheadId_' + smsDeviceInput.target.iden] = thread.id
     delete smsInput.messages
     smsInput.thread = thread
     updateActiveSmsChat()
