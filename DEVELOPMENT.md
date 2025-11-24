@@ -115,11 +115,11 @@ src: url(/assets/fonts/pushfont.woff);
 ### In JavaScript files (use relative paths, no leading slash):
 ```javascript
 // For Chrome extension APIs
-iconUrl: 'assets/images/icon.png'
+iconUrl: '/assets/images/icon.png'
 chrome.extension.getURL('html/options.html')
 
 // For DOM manipulation
-img.src = 'assets/images/icon.png'
+img.src = '/assets/images/icon.png'
 ```
 
 ## Testing
